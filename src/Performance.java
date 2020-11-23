@@ -40,12 +40,6 @@ public class Performance {
       this.sex = new IntWritable(sex.ordinal());
     }
 
-    public CustomWritable(IntWritable id, Text name, IntWritable sex) {
-      this.id = id;
-      this.name = name;
-      this.sex = sex;
-    }
-
     public IntWritable getId() { return id; }
     public Text getName() { return name; }
     public IntWritable getSex() { return sex; }
@@ -62,7 +56,7 @@ public class Performance {
       sex.write(out);
     }
 
-    // this is necessary because reducer needs to know how to order keys
+    // This is necessary because reducer needs to know how to order keys
     public int compareTo(CustomWritable cw) { return id.compareTo(cw.id); }
 
     @Override
@@ -77,14 +71,13 @@ public class Performance {
     throws IOException, InterruptedException {
       StringReader stringReader = new StringReader(value.toString());
       BufferedReader csvReader = new BufferedReader(stringReader);
-      //csvReader.readLine(); // discard first line (titles)
       String row;
       while ((row = csvReader.readLine()) != null) {
         String[] data = row.split(",");
 
         String idstr = data[0];
         if (idstr.length() != 0) // id field might be empty
-          idstr = idstr.substring(1, idstr.length() - 1); // ex.: "123" -> 123
+          idstr = idstr.substring(1, idstr.length() - 1); // Ex.: "123" -> 123
         int id;
         try {
           id = Integer.parseInt(idstr);
