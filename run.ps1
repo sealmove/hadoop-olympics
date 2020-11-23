@@ -5,6 +5,6 @@
 
 hdfs dfsadmin -safemode leave
 hadoop fs -rm -r output
-hadoop jar "$target\$project.jar" "$project" $in $out
-If (!(Test-Path "$results")) {mkdir "$results"}
-hadoop fs -cat "$out/*" > "$results\$(get-date -f dd-MM-yy_HH-mm-ss).txt"
+hadoop jar "$target\$project\$project.jar" "$project" $in $out
+If (!(Test-Path "$results\$project")) {mkdir "$results\$project"}
+hadoop fs -cat "$out/*" > "$results\$project\$(get-date -f dd-MM-yy_HH-mm-ss).txt"

@@ -4,6 +4,6 @@
 . .\conf.ps1
 
 Remove-Item -ErrorAction Ignore -Recurse "$target"
-mkdir "$target"
-javac -cp $(hadoop classpath) -d "$target" "$src\$project.java"
-jar -cvf "$target\$project.jar" -C "$target\" .
+mkdir "$target\$project"
+javac -cp $(hadoop classpath) -d "$target\$project" "$src\$project.java"
+jar -cvf "$target\$project\$project.jar" -C "$target\$project" .

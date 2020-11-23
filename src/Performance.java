@@ -17,7 +17,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 
-public class Olympics {
+public class Performance {
   public static class TokenizerMapper
   extends Mapper<Object, Text, IntWritable, IntWritable> {
     public void map(Object key, Text value, Context context)
@@ -63,17 +63,17 @@ public class Olympics {
     String[] otherArgs =
       new GenericOptionsParser(conf, args).getRemainingArgs();
     if (otherArgs.length < 2) {
-      System.err.println("Usage: olympics <in> [<in>...] <out>");
+      System.err.println("Usage: performance <in> [<in>...] <out>");
       System.exit(2);
     }
     Job job = new Job(conf, "Gold medal count");
-    job.setJarByClass(Olympics.class);
+    job.setJarByClass(Performance.class);
     job.setMapperClass(TokenizerMapper.class);
     job.setCombinerClass(IntSumReducer.class);
     job.setReducerClass(IntSumReducer.class);
     job.setOutputKeyClass(IntWritable.class);
     job.setOutputValueClass(IntWritable.class);
-    job.setJarByClass(Olympics.class);
+    job.setJarByClass(Performance.class);
     for (int i = 0; i < otherArgs.length - 1; ++i)
       FileInputFormat.addInputPath(job, new Path(otherArgs[i]));
     FileOutputFormat.setOutputPath(job,
