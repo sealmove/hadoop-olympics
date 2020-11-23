@@ -67,7 +67,7 @@ public class Performance {
 
     @Override
     public String toString() {
-      return id + " " + name + " " + Sex.values()[sex.get()];
+      return id + "\t" + name + "\t" + Sex.values()[sex.get()];
     }
   }
 
