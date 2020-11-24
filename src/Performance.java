@@ -6,7 +6,6 @@ import java.io.BufferedReader;
 import java.io.StringReader;
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -21,6 +20,33 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 
 public class Performance {
+  // Utility methods
+  public static String unquote(String s) {
+    // id field might be empty
+    if (s.length() != 0)
+      return s.substring(1, s.length() - 1);
+    else
+      return s;
+  }
+
+  public static int tryParseInt(String s) {
+    int result;
+    try {
+      result = Integer.parseInt(s);
+    } catch(NumberFormatException nfe) { result = 0; }
+    return result;
+  }
+
+  public static Sex tryParseSex(String s) {
+    Sex result;
+    try {
+      result = Sex.valueOf(s);
+    } catch (IllegalArgumentException iae) {
+      result = Sex.NA;
+    }
+    return result;
+  }
+
   enum Sex {NA, M, F}
   public static class CustomWritable
   implements WritableComparable<CustomWritable> {
@@ -39,10 +65,6 @@ public class Performance {
       this.name = new Text(name);
       this.sex = new IntWritable(sex.ordinal());
     }
-
-    public IntWritable getId() { return id; }
-    public Text getName() { return name; }
-    public IntWritable getSex() { return sex; }
 
     public void readFields(DataInput in) throws IOException {
       id.readFields(in);
@@ -75,31 +97,14 @@ public class Performance {
       while ((row = csvReader.readLine()) != null) {
         String[] data = row.split(",");
 
-        String idstr = data[0];
-        if (idstr.length() != 0) // id field might be empty
-          idstr = idstr.substring(1, idstr.length() - 1); // Ex.: "123" -> 123
-        int id;
-        try {
-          id = Integer.parseInt(idstr);
-        } catch(NumberFormatException nfe) { id = 0; }
+        // Key
+        int id = tryParseInt(unquote(data[0]));
+        String name = unquote(data[1]);
+        Sex sex = tryParseSex(unquote(data[2]));
 
-        String name = data[1];
-        if (name.length() != 0)
-          name = name.substring(1, name.length() - 1);
-
-        String sexstr = data[2];
-        if (sexstr.length() != 0)
-          sexstr = sexstr.substring(1, sexstr.length() - 1);
-        Sex sex = Sex.NA;
-        if (sexstr.equals("M"))
-          sex = Sex.M;
-        else if (sexstr.equals("F"))
-          sex = Sex.F;
-
-        String medalstr = data[14];
-        if (medalstr.length() != 0)
-          medalstr = medalstr.substring(1, medalstr.length() - 1);
-        int medal = medalstr.equals("Gold") ? 1 : 0;
+        // Value
+        String medalStr = unquote(data[14]);
+        int medal = medalStr.equals("Gold") ? 1 : 0;
 
         context.write(
           new CustomWritable(id, name, sex),
