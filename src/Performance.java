@@ -124,9 +124,8 @@ public class Performance {
 
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
-    String[] otherArgs =
-      new GenericOptionsParser(conf, args).getRemainingArgs();
-    if (otherArgs.length < 2) {
+    String[] args = new GenericOptionsParser(conf, args).getRemainingArgs();
+    if (args.length < 2) {
       System.err.println("Usage: performance <in> [<in>...] <out>");
       System.exit(2);
     }
@@ -138,10 +137,9 @@ public class Performance {
     job.setOutputKeyClass(CustomWritable.class);
     job.setOutputValueClass(IntWritable.class);
     job.setJarByClass(Performance.class);
-    for (int i = 0; i < otherArgs.length - 1; ++i)
-      FileInputFormat.addInputPath(job, new Path(otherArgs[i]));
-    FileOutputFormat.setOutputPath(job,
-      new Path(otherArgs[otherArgs.length - 1]));
+    for (int i = 0; i < args.length - 1; ++i)
+      FileInputFormat.addInputPath(job, new Path(args[i]));
+    FileOutputFormat.setOutputPath(job, new Path(args[args.length - 1]));
     job.waitForCompletion(true);
   }
 }
