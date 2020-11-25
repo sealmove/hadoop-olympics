@@ -19,16 +19,12 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 
+// https://sourceforge.net/projects/opencsv/
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
+
 public class Performance {
   // Utility methods
-  public static String unquote(String s) {
-    // id field might be empty
-    if (s.length() != 0)
-      return s.substring(1, s.length() - 1);
-    else
-      return s;
-  }
-
   public static int tryParseInt(String s) {
     int result;
     try {
@@ -92,25 +88,25 @@ public class Performance {
     public void map(Object key, Text value, Context context)
     throws IOException, InterruptedException {
       StringReader stringReader = new StringReader(value.toString());
-      BufferedReader csvReader = new BufferedReader(stringReader);
-      String row;
-      while ((row = csvReader.readLine()) != null) {
-        String[] data = row.split(",");
+      CSVReader csvReader = new CSVReader(stringReader);
+      String[] row;
+      try {
+        while ((row = csvReader.readNext()) != null) {
+          // Key
+          int id = tryParseInt(row[0]);
+          String name = row[1];
+          Sex sex = tryParseSex(row[2]);
 
-        // Key
-        int id = tryParseInt(unquote(data[0]));
-        String name = unquote(data[1]);
-        Sex sex = tryParseSex(unquote(data[2]));
+          // Value
+          String medalStr = row[14];
+          int medal = medalStr.equals("Gold") ? 1 : 0;
 
-        // Value
-        String medalStr = unquote(data[14]);
-        int medal = medalStr.equals("Gold") ? 1 : 0;
-
-        context.write(
-          new CustomWritable(id, name, sex),
-          new IntWritable(medal)
-        );
-      }
+          context.write(
+            new CustomWritable(id, name, sex),
+            new IntWritable(medal)
+          );
+        }
+      } catch (CsvValidationException cve) {}
       csvReader.close();
     }
   }
@@ -146,6 +142,6 @@ public class Performance {
       FileInputFormat.addInputPath(job, new Path(otherArgs[i]));
     FileOutputFormat.setOutputPath(job,
       new Path(otherArgs[otherArgs.length - 1]));
-    System.exit(job.waitForCompletion(true) ? 0 : 1);
+    job.waitForCompletion(true);
   }
 }
