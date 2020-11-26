@@ -109,6 +109,7 @@ public class Top {
       games.write(out);
     }
 
+    // This is necessary because reducer needs to know how to order keys
     @Override
     public int compareTo(AthleteWritable cw) {
       if (id.equals(cw.id)) {
@@ -117,7 +118,38 @@ public class Top {
         return id.compareTo(cw.id);
       }
     }
+/*
+    // This is necessary because reducer needs to know how to group keys
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
+      AthleteWritable cw = (AthleteWritable) obj;
+      if (games == null) {
+        if (cw.games != null) {
+          return false;
+        } else if (!games.equals(cw.games)) {
+          return false;
+        }
+      }
+      return id.equals(cw.id);
+    }
 
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((id == null) ? 0 : id.hashCode());
+      result = prime * result + ((name == null) ? 0 : name.hashCode());
+      result = prime * result + ((sex == null) ? 0 : sex.hashCode());
+      result = prime * result + ((age == null) ? 0 : age.hashCode());
+      result = prime * result + ((team == null) ? 0 : team.hashCode());
+      result = prime * result + ((sport == null) ? 0 : sport.hashCode());
+      result = prime * result + ((games == null) ? 0 : games.hashCode());
+      return result;
+    }
+*/
     @Override
     public String toString() {
       return name + "\t" +
