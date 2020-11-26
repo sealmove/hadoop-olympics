@@ -82,7 +82,7 @@ public class Performance {
 
     @Override
     public String toString() {
-      return id + "\t" + name + "\t" + Sex.values()[sex.get()];
+      return id + " " + name + " " + Sex.values()[sex.get()];
     }
   }
 
@@ -127,6 +127,7 @@ public class Performance {
 
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
+    conf.set("mapreduce.output.textoutputformat.separator", " ");
     String[] hargs = new GenericOptionsParser(conf, args).getRemainingArgs();
     if (hargs.length < 2) {
       System.err.println("Usage: performance <in> [<in>...] <out>");
@@ -135,8 +136,8 @@ public class Performance {
     Job job = new Job(conf, "Gold medal count");
     job.setJarByClass(Performance.class);
     job.setMapperClass(PerformanceMapper.class);
-    job.setCombinerClass(PerformanceReducer.class);
     job.setReducerClass(PerformanceReducer.class);
+    job.setCombinerClass(PerformanceReducer.class);
     job.setOutputKeyClass(CustomWritable.class);
     job.setOutputValueClass(IntWritable.class);
     FileInputFormat.addInputPath(job, new Path(hargs[0]));

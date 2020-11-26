@@ -8,6 +8,7 @@ $file = "$results\$project\$date.txt"
 
 # remove previous output to write new one
 hdfs dfsadmin -safemode leave
+hadoop fs -rm -r temp
 hadoop fs -rm -r output
 
 # run the code
@@ -16,6 +17,3 @@ hadoop jar "$target\$project\$project.jar" "$project" $in $out
 # copy results from hdfs locally
 If (!(Test-Path "$results\$project")) {mkdir "$results\$project"}
 hadoop fs -cat "$out/*" > $file
-
-# remove first line (titles)
-(Get-Content $file | Select-Object -Skip 1) | Set-Content $file

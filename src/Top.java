@@ -3,6 +3,7 @@
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.io.DataInput;
 import java.io.DataOutput;
 
@@ -11,6 +12,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -21,9 +23,11 @@ import org.apache.hadoop.util.GenericOptionsParser;
 
 // https://sourceforge.net/projects/opencsv/
 import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvValidationException;
 
 public class Top {
+  static int n = 1;
   // Utility methods
   public static int tryParseInt(String s) {
     int result;
@@ -58,7 +62,6 @@ public class Top {
 
   public static class AthleteWritable
   implements WritableComparable<AthleteWritable> {
-    private final IntWritable id;
     private final Text name;
     private final IntWritable sex;
     private final IntWritable age;
@@ -66,8 +69,14 @@ public class Top {
     private final Text games;
     private final Text sport;
 
+    public Text getName() { return name; }
+    public IntWritable getSex() { return sex; }
+    public IntWritable getAge() { return age; }
+    public Text getTeam() { return team; }
+    public Text getGames() { return games; }
+    public Text getSport() { return sport; }
+
     public AthleteWritable() {
-      this.id = new IntWritable(0);
       this.name = new Text();
       this.sex = new IntWritable(0);
       this.age = new IntWritable(0);
@@ -76,9 +85,8 @@ public class Top {
       this.sport = new Text();
     }
 
-    public AthleteWritable(int id, String name, Sex sex, int age, String team,
+    public AthleteWritable(String name, Sex sex, int age, String team,
                            String games, String sport) {
-      this.id = new IntWritable(id);
       this.name = new Text(name);
       this.sex = new IntWritable(sex.ordinal());
       this.age = new IntWritable(age);
@@ -89,7 +97,6 @@ public class Top {
 
     @Override
     public void readFields(DataInput in) throws IOException {
-      id.readFields(in);
       name.readFields(in);
       sex.readFields(in);
       age.readFields(in);
@@ -100,7 +107,6 @@ public class Top {
 
     @Override
     public void write(DataOutput out) throws IOException {
-      id.write(out);
       name.write(out);
       sex.write(out);
       age.write(out);
@@ -111,22 +117,32 @@ public class Top {
 
     // This is necessary because reducer needs to know how to order keys
     @Override
-    public int compareTo(AthleteWritable cw) {
-      if (id.equals(cw.id)) {
-        return games.compareTo(cw.games);
+    public int compareTo(AthleteWritable aw) {
+      if (name.equals(aw.name)) {
+        return games.compareTo(aw.games);
       } else {
-        return id.compareTo(cw.id);
+        return name.compareTo(aw.name);
       }
     }
 
     @Override
     public String toString() {
-      return name + "\t" +
-             Sex.values()[sex.get()] + "\t" +
-             age + "\t" +
-             team + "\t" +
-             games + "\t" +
-             sport;
+      String[] entry = {
+        name.toString(),
+        Sex.values()[sex.get()].toString(),
+        age.toString(),
+        team.toString(),
+        sport.toString(),
+        games.toString()
+      };
+      StringWriter stringWriter = new StringWriter();
+      CSVWriter csvWriter = new CSVWriter(stringWriter);
+      try {
+        csvWriter.writeNext(entry);
+        csvWriter.close();
+      } catch (IOException ioe) {}
+      String result = stringWriter.toString();
+      return result.substring(0, result.length() - 1);
     }
   }
 
@@ -135,6 +151,11 @@ public class Top {
     private final IntWritable silvers;
     private final IntWritable bronzes;
     private final IntWritable total;
+
+    public IntWritable getGolds() { return golds; }
+    public IntWritable getSilvers() { return silvers; }
+    public IntWritable getBronzes() { return bronzes; }
+    public IntWritable getTotal() { return total; }
 
     public MedalsWritable() {
       this.golds = new IntWritable(0);
@@ -168,7 +189,94 @@ public class Top {
 
     @Override
     public String toString() {
-      return golds + "\t" + silvers + "\t" + bronzes + "\t" + total;
+      String[] entry = {
+        golds.toString(),
+        silvers.toString(),
+        bronzes.toString(),
+        total.toString()
+      };
+      StringWriter stringWriter = new StringWriter();
+      CSVWriter csvWriter = new CSVWriter(stringWriter);
+      try {
+        csvWriter.writeNext(entry);
+        csvWriter.close();
+      } catch (IOException ioe) {}
+      String result = stringWriter.toString();
+      return result.substring(0, result.length() - 1);
+    }
+  }
+
+  public static class ChampionWritable
+  implements WritableComparable<ChampionWritable> {
+    private IntWritable rank;
+    private final AthleteWritable athlete;
+    private final MedalsWritable medals;
+
+    public AthleteWritable getAthlete() { return athlete; }
+    public MedalsWritable getMedals() { return medals; }
+    public IntWritable getRank() { return rank; }
+
+    public void setRank(int rank) { this.rank = new IntWritable(rank); }
+
+    public ChampionWritable() {
+      rank = new IntWritable(0);
+      athlete = new AthleteWritable();
+      medals = new MedalsWritable();
+    }
+
+    public ChampionWritable(String name, Sex sex, int age, String team,
+                            String games, String sport, int golds, int silvers,
+                            int bronzes, int total) {
+      rank = new IntWritable(0);
+      athlete = new AthleteWritable(name, sex, age, team, games, sport);
+      medals = new MedalsWritable(golds, silvers, bronzes, total);
+    }
+
+    @Override
+    public void readFields(DataInput in) throws IOException {
+      rank.readFields(in);
+      athlete.readFields(in);
+      medals.readFields(in);
+    }
+
+    @Override
+    public void write(DataOutput out) throws IOException {
+      rank.write(out);
+      athlete.write(out);
+      medals.write(out);
+    }
+
+    // This is necessary because reducer needs to know how to order keys
+    @Override
+    public int compareTo(ChampionWritable cw) {
+      int cmp = medals.getGolds().compareTo(cw.getMedals().getGolds());
+      if (cmp != 0) return -cmp;
+
+      cmp = medals.getTotal().compareTo(cw.getMedals().getTotal());
+      if (cmp != 0) return -cmp;
+
+      cmp = athlete.getName().compareTo(cw.getAthlete().getName());
+      if (cmp != 0) return -cmp;
+
+      cmp = athlete.getGames().compareTo(cw.getAthlete().getGames());
+      if (cmp != 0) return -cmp;
+
+      return 0;
+    }
+
+    @Override
+    public String toString() {
+      return getRank() + " " +
+             athlete.getName() + " " +
+             Sex.values()[athlete.getSex().get()] + " " +
+             athlete.getAge() + " " +
+             athlete.getTeam() + " " +
+             athlete.getSport() + " " +
+             athlete.getGames() + " " +
+             medals.getGolds() + " " +
+             medals.getSilvers() + " " +
+             medals.getBronzes() + " " +
+             medals.getTotal();
     }
   }
 
@@ -182,7 +290,6 @@ public class Top {
       try {
         while ((row = csvReader.readNext()) != null) {
           // Key
-          int id = tryParseInt(row[0]);
           String name = row[1];
           Sex sex = tryParseSex(row[2]);
           int age = tryParseInt(row[3]);
@@ -194,7 +301,7 @@ public class Top {
           Medal medal = tryParseMedal(row[14]);
 
           context.write(
-            new AthleteWritable(id, name, sex, age, team, games, sport),
+            new AthleteWritable(name, sex, age, team, games, sport),
             new IntWritable(medal.ordinal())
           );
         }
@@ -230,19 +337,55 @@ public class Top {
   }
 
   public static class RankingMapper
-  extends Mapper<Object, Text, AthleteWritable, IntWritable> {
+  extends Mapper<Object, Text, ChampionWritable, NullWritable> {
     public void map(Object key, Text value, Context context)
-    throws IOException, InterruptedException {}
+    throws IOException, InterruptedException {
+      StringReader stringReader = new StringReader(value.toString());
+      CSVReader csvReader = new CSVReader(stringReader);
+      String[] row;
+      try {
+        while ((row = csvReader.readNext()) != null) {
+          // Key
+          String name = row[0];
+          Sex sex = tryParseSex(row[1]);
+          int age = tryParseInt(row[2]);
+          String team = row[3];
+          String games = row[4];
+          String sport = row[5];
+          int golds = tryParseInt(row[6]);
+          int silvers = tryParseInt(row[7]);
+          int bronzes = tryParseInt(row[8]);
+          int total = tryParseInt(row[9]);
+
+          context.write(
+            new ChampionWritable(name, sex, age, team, games, sport, golds,
+                                 silvers, bronzes, total),
+            NullWritable.get()
+          );
+        }
+      } catch (CsvValidationException cve) {}
+      csvReader.close();
+    }
   }
 
   public static class RankingReducer
-  extends Reducer<AthleteWritable, IntWritable, AthleteWritable, MedalsWritable> {
-    public void reduce(AthleteWritable key, Iterable<IntWritable> values,
-    Context context) throws IOException, InterruptedException {}
+  extends Reducer<ChampionWritable, NullWritable, ChampionWritable, NullWritable> {
+    public void reduce(ChampionWritable key, Iterable<NullWritable> values,
+    Context context) throws IOException, InterruptedException {
+      if (n <= 10) {
+        for (NullWritable val : values) {
+          key.setRank(n);
+          context.write(key, val);
+        }
+      }
+      ++n;
+    }
   }
 
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
+    conf.set("mapreduce.output.textoutputformat.separator", ",");
+
     String[] hargs = new GenericOptionsParser(conf, args).getRemainingArgs();
     if (hargs.length < 2) {
       System.err.println("Usage: top <in> [<in>...] <out>");
@@ -258,18 +401,20 @@ public class Top {
     job1.setOutputKeyClass(AthleteWritable.class);
     job1.setOutputValueClass(MedalsWritable.class);
     FileInputFormat.addInputPath(job1, new Path(hargs[0]));
-    FileOutputFormat.setOutputPath(job1, new Path("temp");
+    FileOutputFormat.setOutputPath(job1, new Path("temp"));
 
+    conf.set("mapreduce.output.textoutputformat.separator", " ");
     Job job2 = new Job(conf, "Ranking");
     job2.setJarByClass(Top.class);
     job2.setMapperClass(RankingMapper.class);
     job2.setReducerClass(RankingReducer.class);
-    //job2.setMapOutputKeyClass(.class);
-    //job2.setMapOutputValueClass(.class);
-    //job2.setOutputKeyClass(.class);
-    //job2.setOutputValueClass(.class);
-    FileInputFormat.addInputPath(job1, new Path("temp"));
-    FileOutputFormat.setOutputPath(job1, new Path(hargs[1]));
+    job2.setCombinerClass(RankingReducer.class);
+    job2.setMapOutputKeyClass(ChampionWritable.class);
+    job2.setMapOutputValueClass(NullWritable.class);
+    job2.setOutputKeyClass(ChampionWritable.class);
+    job2.setOutputValueClass(NullWritable.class);
+    FileInputFormat.addInputPath(job2, new Path("temp"));
+    FileOutputFormat.setOutputPath(job2, new Path(hargs[1]));
 
     job1.waitForCompletion(true);
     job2.waitForCompletion(true);
