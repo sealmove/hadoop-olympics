@@ -139,10 +139,8 @@ public class Performance {
     job.setReducerClass(PerformanceReducer.class);
     job.setOutputKeyClass(CustomWritable.class);
     job.setOutputValueClass(IntWritable.class);
-    job.setJarByClass(Performance.class);
-    for (int i = 0; i < hargs.length - 1; ++i)
-      FileInputFormat.addInputPath(job, new Path(hargs[i]));
-    FileOutputFormat.setOutputPath(job, new Path(hargs[hargs.length - 1]));
+    FileInputFormat.addInputPath(job, new Path(hargs[0]));
+    FileOutputFormat.setOutputPath(job, new Path(hargs[1]));
     job.waitForCompletion(true);
   }
 }

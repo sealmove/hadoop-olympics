@@ -77,7 +77,7 @@ public class Top {
     }
 
     public AthleteWritable(int id, String name, Sex sex, int age, String team,
-                          String games, String sport) {
+                           String games, String sport) {
       this.id = new IntWritable(id);
       this.name = new Text(name);
       this.sex = new IntWritable(sex.ordinal());
@@ -172,7 +172,7 @@ public class Top {
     }
   }
 
-  public static class TopMapper
+  public static class GoldMedalCountMapper
   extends Mapper<Object, Text, AthleteWritable, IntWritable> {
     public void map(Object key, Text value, Context context)
     throws IOException, InterruptedException {
@@ -203,7 +203,7 @@ public class Top {
     }
   }
 
-  public static class TopReducer
+  public static class GoldMedalCountReducer
   extends Reducer<AthleteWritable, IntWritable, AthleteWritable, MedalsWritable> {
     public void reduce(AthleteWritable key, Iterable<IntWritable> values,
     Context context) throws IOException, InterruptedException {
@@ -229,6 +229,18 @@ public class Top {
     }
   }
 
+  public static class RankingMapper
+  extends Mapper<Object, Text, AthleteWritable, IntWritable> {
+    public void map(Object key, Text value, Context context)
+    throws IOException, InterruptedException {}
+  }
+
+  public static class RankingReducer
+  extends Reducer<AthleteWritable, IntWritable, AthleteWritable, MedalsWritable> {
+    public void reduce(AthleteWritable key, Iterable<IntWritable> values,
+    Context context) throws IOException, InterruptedException {}
+  }
+
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
     String[] hargs = new GenericOptionsParser(conf, args).getRemainingArgs();
@@ -236,25 +248,30 @@ public class Top {
       System.err.println("Usage: top <in> [<in>...] <out>");
       System.exit(2);
     }
-    
+
     Job job1 = new Job(conf, "Gold medal count");
     job1.setJarByClass(Top.class);
-    job1.setMapperClass(TopMapper.class);
-    job1.setReducerClass(TopReducer.class);
+    job1.setMapperClass(GoldMedalCountMapper.class);
+    job1.setReducerClass(GoldMedalCountReducer.class);
     job1.setMapOutputKeyClass(AthleteWritable.class);
     job1.setMapOutputValueClass(IntWritable.class);
     job1.setOutputKeyClass(AthleteWritable.class);
     job1.setOutputValueClass(MedalsWritable.class);
-    job1.setJarByClass(Top.class);
+    FileInputFormat.addInputPath(job1, new Path(hargs[0]));
+    FileOutputFormat.setOutputPath(job1, new Path("temp");
 
-    //Job job2 = new Job(conf, "Ranking");
-    //job2.setJarByClass(Top.class);
-
-    for (int i = 0; i < hargs.length - 1; ++i)
-      FileInputFormat.addInputPath(job1, new Path(hargs[i]));
-    FileOutputFormat.setOutputPath(job1, new Path(hargs[hargs.length - 1]));
+    Job job2 = new Job(conf, "Ranking");
+    job2.setJarByClass(Top.class);
+    job2.setMapperClass(RankingMapper.class);
+    job2.setReducerClass(RankingReducer.class);
+    //job2.setMapOutputKeyClass(.class);
+    //job2.setMapOutputValueClass(.class);
+    //job2.setOutputKeyClass(.class);
+    //job2.setOutputValueClass(.class);
+    FileInputFormat.addInputPath(job1, new Path("temp"));
+    FileOutputFormat.setOutputPath(job1, new Path(hargs[1]));
 
     job1.waitForCompletion(true);
-    //job2.waitForCompletion(true);
+    job2.waitForCompletion(true);
   }
 }
