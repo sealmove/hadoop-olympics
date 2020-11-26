@@ -97,6 +97,7 @@ public class Performance {
         while ((row = csvReader.readNext()) != null) {
           // Key
           int id = tryParseInt(row[0]);
+          if (id == 0) continue; // skip first row (titles)
           String name = row[1];
           Sex sex = tryParseSex(row[2]);
 
