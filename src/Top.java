@@ -149,6 +149,7 @@ public class Top {
       this.total = new IntWritable(total);
     }
 
+    @Override
     public void readFields(DataInput in) throws IOException {
       golds.readFields(in);
       silvers.readFields(in);
@@ -156,6 +157,7 @@ public class Top {
       total.readFields(in);
     }
 
+    @Override
     public void write(DataOutput out) throws IOException {
       golds.write(out);
       silvers.write(out);
