@@ -62,12 +62,14 @@ public class Performance {
       this.sex = new IntWritable(sex.ordinal());
     }
 
+    @Override
     public void readFields(DataInput in) throws IOException {
       id.readFields(in);
       name.readFields(in);
       sex.readFields(in);
     }
 
+    @Override
     public void write(DataOutput out) throws IOException {
       id.write(out);
       name.write(out);
@@ -75,6 +77,7 @@ public class Performance {
     }
 
     // This is necessary because reducer needs to know how to order keys
+    @Override
     public int compareTo(CustomWritable cw) { return id.compareTo(cw.id); }
 
     @Override
@@ -124,8 +127,8 @@ public class Performance {
 
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
-    String[] args = new GenericOptionsParser(conf, args).getRemainingArgs();
-    if (args.length < 2) {
+    String[] hargs = new GenericOptionsParser(conf, args).getRemainingArgs();
+    if (hargs.length < 2) {
       System.err.println("Usage: performance <in> [<in>...] <out>");
       System.exit(2);
     }
@@ -137,9 +140,9 @@ public class Performance {
     job.setOutputKeyClass(CustomWritable.class);
     job.setOutputValueClass(IntWritable.class);
     job.setJarByClass(Performance.class);
-    for (int i = 0; i < args.length - 1; ++i)
-      FileInputFormat.addInputPath(job, new Path(args[i]));
-    FileOutputFormat.setOutputPath(job, new Path(args[args.length - 1]));
+    for (int i = 0; i < hargs.length - 1; ++i)
+      FileInputFormat.addInputPath(job, new Path(hargs[i]));
+    FileOutputFormat.setOutputPath(job, new Path(hargs[hargs.length - 1]));
     job.waitForCompletion(true);
   }
 }

@@ -87,6 +87,7 @@ public class Top {
       this.games = new Text(games);
     }
 
+    @Override
     public void readFields(DataInput in) throws IOException {
       id.readFields(in);
       name.readFields(in);
@@ -97,6 +98,7 @@ public class Top {
       games.readFields(in);
     }
 
+    @Override
     public void write(DataOutput out) throws IOException {
       id.write(out);
       name.write(out);
@@ -107,9 +109,9 @@ public class Top {
       games.write(out);
     }
 
-    // This is necessary because reducer needs to know how to order keys
+    @Override
     public int compareTo(AthleteWritable cw) {
-      if (id.compareTo(cw.id) == 0) {
+      if (id.equals(cw.id)) {
         return games.compareTo(cw.games);
       } else {
         return id.compareTo(cw.id);
@@ -118,7 +120,12 @@ public class Top {
 
     @Override
     public String toString() {
-      return name + "\t" + Sex.values()[sex.get()] + "\t" + age + "\t" + games;
+      return name + "\t" +
+             Sex.values()[sex.get()] + "\t" +
+             age + "\t" +
+             team + "\t" +
+             sport + "\t" +
+             games;
     }
   }
 
@@ -221,8 +228,8 @@ public class Top {
 
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
-    String[] args = new GenericOptionsParser(conf, args).getRemainingArgs();
-    if (args.length < 2) {
+    String[] hargs = new GenericOptionsParser(conf, args).getRemainingArgs();
+    if (hargs.length < 2) {
       System.err.println("Usage: top <in> [<in>...] <out>");
       System.exit(2);
     }
@@ -238,10 +245,11 @@ public class Top {
     job1.setJarByClass(Top.class);
 
     //Job job2 = new Job(conf, "Ranking");
+    //job2.setJarByClass(Top.class);
 
-    for (int i = 0; i < args.length - 1; ++i)
-      FileInputFormat.addInputPath(job1, new Path(args[i]));
-    FileOutputFormat.setOutputPath(job1, new Path(args[args.length - 1]));
+    for (int i = 0; i < hargs.length - 1; ++i)
+      FileInputFormat.addInputPath(job1, new Path(hargs[i]));
+    FileOutputFormat.setOutputPath(job1, new Path(hargs[hargs.length - 1]));
 
     job1.waitForCompletion(true);
     //job2.waitForCompletion(true);
