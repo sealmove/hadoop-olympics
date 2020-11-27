@@ -4,7 +4,7 @@
 . .\conf.ps1
 
 # Remove old target files
-Remove-Item -ErrorAction Ignore -Recurse "$target"
+Remove-Item -ErrorAction Ignore -Recurse "$target\$project"
 mkdir "$target\$project"
 
 # Compile classes
