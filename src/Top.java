@@ -121,7 +121,7 @@ public class Top {
       sport.write(out);
     }
 
-    // This is necessary because reducer needs to know how to order keys
+    // This is defines the way data will be partitioned and ordered
     @Override
     public int compareTo(AthleteWritable aw) {
       if (id.equals(aw.id)) {
@@ -253,21 +253,17 @@ public class Top {
       medals.write(out);
     }
 
-    // This is necessary because reducer needs to know how to order keys
+    // This is defines the way data will be partitioned and ordered
     @Override
     public int compareTo(ChampionWritable cw) {
       int cmp = medals.getGolds().compareTo(cw.getMedals().getGolds());
       if (cmp != 0) return -cmp;
-
       cmp = medals.getTotal().compareTo(cw.getMedals().getTotal());
       if (cmp != 0) return -cmp;
-
       cmp = athlete.getName().compareTo(cw.getAthlete().getName());
       if (cmp != 0) return cmp;
-
       cmp = athlete.getGames().compareTo(cw.getAthlete().getGames());
       if (cmp != 0) return cmp;
-
       return 0;
     }
 

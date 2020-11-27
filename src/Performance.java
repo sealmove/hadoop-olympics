@@ -76,7 +76,7 @@ public class Performance {
       sex.write(out);
     }
 
-    // This is necessary because reducer needs to know how to order keys
+    // This is defines the way data will be partitioned and ordered
     @Override
     public int compareTo(CustomWritable cw) { return id.compareTo(cw.id); }
 
