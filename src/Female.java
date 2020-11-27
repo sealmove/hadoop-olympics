@@ -93,7 +93,7 @@ public class Female {
       year.write(out);
     }
 
-    // This is defines the way data will be partitioned and ordered
+    // Defines the way data will be partitioned and ordered
     @Override
     public int compareTo(TeamPartWritable tpw) {
       int cmp = year.compareTo(tpw.year);
@@ -219,7 +219,7 @@ public class Female {
       sport.write(out);
     }
 
-    // This is defines the way data will be partitioned and ordered
+    // Defines the way data will be partitioned and ordered
     @Override
     public int compareTo(TeamAthletesWritable taw) {
       int cmp = games.compareTo(taw.games);
