@@ -4,6 +4,7 @@
 import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.io.DataInput;
 import java.io.DataOutput;
 
@@ -17,6 +18,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -27,9 +29,13 @@ import org.apache.hadoop.util.GenericOptionsParser;
 
 // https://sourceforge.net/projects/opencsv/
 import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvValidationException;
 
 public class Female {
+  static HashMap<Text, Integer> recordCounts = new HashMap<>();
+  static HashMap<Text, Integer> lastTeamSizes = new HashMap<>();
+
   // Utility methods
   public static int tryParseInt(String s) {
     int result;
@@ -50,21 +56,21 @@ public class Female {
   }
 
   enum Sex {NA, M, F}
-  public static class PartWritable
-  implements WritableComparable<PartWritable> {
+  public static class TeamPartWritable
+  implements WritableComparable<TeamPartWritable> {
     private final Text team;
     private final Text noc;
     private final Text games;
     private final IntWritable year;
 
-    public PartWritable() {
+    public TeamPartWritable() {
       this.team = new Text();
       this.noc = new Text();
       this.games = new Text();
       this.year = new IntWritable(0);
     }
 
-    public PartWritable(String team, String noc, String games, int year) {
+    public TeamPartWritable(String team, String noc, String games, int year) {
       this.team = new Text(team);
       this.noc = new Text(noc);
       this.games = new Text(games);
@@ -89,18 +95,32 @@ public class Female {
 
     // This is defines the way data will be partitioned and ordered
     @Override
-    public int compareTo(PartWritable pw) {
-      int cmp = year.compareTo(pw.year);
+    public int compareTo(TeamPartWritable tpw) {
+      int cmp = year.compareTo(tpw.year);
       if (cmp != 0) return cmp;
-      cmp = team.compareTo(pw.team);
+      cmp = team.compareTo(tpw.team);
       if (cmp != 0) return cmp;
-      cmp = games.compareTo(pw.games);
+      cmp = games.compareTo(tpw.games);
       if (cmp != 0) return cmp;
       return 0;
     }
 
     @Override
-    public String toString() { return games + " " + team + " " + noc; }
+    public String toString() {
+      String[] entry = {
+        games.toString(),
+        team.toString(),
+        noc.toString()
+      };
+      StringWriter stringWriter = new StringWriter();
+      CSVWriter csvWriter = new CSVWriter(stringWriter);
+      try {
+        csvWriter.writeNext(entry);
+        csvWriter.close();
+      } catch (IOException ioe) {}
+      String result = stringWriter.toString();
+      return result.substring(0, result.length() - 1);
+    }
   }
 
   // This class is used to represent both (id, sport) and (count, sport) pairs
@@ -134,11 +154,91 @@ public class Female {
     }
     
     @Override
-    public String toString() { return num + " " + sport; }
+    public String toString() {
+      String[] entry = {
+        num.toString(),
+        sport.toString()
+      };
+      StringWriter stringWriter = new StringWriter();
+      CSVWriter csvWriter = new CSVWriter(stringWriter);
+      try {
+        csvWriter.writeNext(entry);
+        csvWriter.close();
+      } catch (IOException ioe) {}
+      String result = stringWriter.toString();
+      return result.substring(0, result.length() - 1);
+    }
   }
 
-  public static class FemaleMapper
-  extends Mapper<Object, Text, PartWritable, CustomWritable> {
+  public static class TeamAthletesWritable
+  implements WritableComparable<TeamAthletesWritable> {
+    private final Text games;
+    private final Text team;
+    private final Text noc;
+    private final IntWritable athletes;
+    private final Text sport;
+
+    public Text getGames() { return games; }
+    public Text getTeam() { return team; }
+    public Text getNoc() { return noc; }
+    public IntWritable getAthletes() { return athletes; }
+    public Text getSport() { return sport; }
+
+    public TeamAthletesWritable() {
+      this.games = new Text();
+      this.team = new Text();
+      this.noc = new Text();
+      this.athletes = new IntWritable(0);
+      this.sport = new Text();
+    }
+
+    public TeamAthletesWritable(String games, String team, String noc,
+                            int athletes, String sport) {
+      this.games = new Text(games);
+      this.team = new Text(team);
+      this.noc = new Text(noc);
+      this.athletes = new IntWritable(athletes);
+      this.sport = new Text(sport);
+    }
+
+    @Override
+    public void readFields(DataInput in) throws IOException {
+      games.readFields(in);
+      team.readFields(in);
+      noc.readFields(in);
+      athletes.readFields(in);
+      sport.readFields(in);
+    }
+
+    @Override
+    public void write(DataOutput out) throws IOException {
+      games.write(out);
+      team.write(out);
+      noc.write(out);
+      athletes.write(out);
+      sport.write(out);
+    }
+
+    // This is defines the way data will be partitioned and ordered
+    @Override
+    public int compareTo(TeamAthletesWritable taw) {
+      int cmp = games.compareTo(taw.games);
+      if (cmp != 0) return cmp;
+      cmp = athletes.compareTo(taw.athletes);
+      if (cmp != 0) return -cmp;
+      cmp = team.compareTo(taw.team);
+      if (cmp != 0) return cmp;
+      return 0;
+    }
+
+    @Override
+    public String toString() {
+      return games + " " + team + " " + noc + " " + athletes + " " + sport;
+    }
+  }
+
+  public static class TeamPartMapper
+  extends Mapper<Object, Text, TeamPartWritable, CustomWritable> {
     public void map(Object key, Text value, Context context)
     throws IOException, InterruptedException {
       StringReader stringReader = new StringReader(value.toString());
@@ -161,7 +261,7 @@ public class Female {
           String sport = row[12];
 
           context.write(
-            new PartWritable(team, noc, games, year),
+            new TeamPartWritable(team, noc, games, year),
             new CustomWritable(id, sport)
           );
         }
@@ -170,24 +270,25 @@ public class Female {
     }
   }
 
-  public static class FemaleReducer
-  extends Reducer<PartWritable, CustomWritable, PartWritable, CustomWritable> {
-    public void reduce(PartWritable key, Iterable<CustomWritable> values,
+  public static class TeamPartReducer
+  extends Reducer<TeamPartWritable, CustomWritable,
+                  TeamPartWritable, CustomWritable> {
+    public void reduce(TeamPartWritable key, Iterable<CustomWritable> values,
     Context context) throws IOException, InterruptedException {
       HashSet<IntWritable> ids = new HashSet<>();
-      HashMap<Text, Integer> sportsCount = new HashMap<>();
+      HashMap<Text, Integer> sportCounts = new HashMap<>();
 
       for (CustomWritable val : values) {
         ids.add(val.getNum());
 
         Text sport = val.getSport();
-        int i = sportsCount.containsKey(sport) ? sportsCount.get(sport) : 0;
-        sportsCount.put(sport, i + 1);
+        int i = sportCounts.containsKey(sport) ? sportCounts.get(sport) : 0;
+        sportCounts.put(sport, i + 1);
       }
 
       // Sport with the maximum count
       Map.Entry<Text, Integer> topSport = null;
-      for (Map.Entry<Text, Integer> entry : sportsCount.entrySet())
+      for (Map.Entry<Text, Integer> entry : sportCounts.entrySet())
         if (topSport == null || entry.getValue().compareTo(topSport.getValue()) > 0)
           topSport = entry;
 
@@ -201,22 +302,81 @@ public class Female {
     }
   }
 
+  public static class RankingMapper
+  extends Mapper<Object, Text, TeamAthletesWritable, NullWritable> {
+    public void map(Object key, Text value, Context context)
+    throws IOException, InterruptedException {
+      StringReader stringReader = new StringReader(value.toString());
+      CSVReader csvReader = new CSVReader(stringReader);
+      String[] row;
+      try {
+        while ((row = csvReader.readNext()) != null) {
+          String games = row[0];
+          String team = row[1];
+          String noc = row[2];
+          int athletes = tryParseInt(row[3]);
+          String sport = row[4];
+
+          context.write(
+            new TeamAthletesWritable(games, team, noc, athletes, sport),
+            NullWritable.get()
+          );
+        }
+      } catch (CsvValidationException cve) {}
+      csvReader.close();
+    }
+  }
+
+  public static class RankingReducer
+  extends Reducer<TeamAthletesWritable, NullWritable,
+                  TeamAthletesWritable, NullWritable> {
+    public void reduce(TeamAthletesWritable key, Iterable<NullWritable> values,
+    Context context) throws IOException, InterruptedException {
+      for (NullWritable val : values) {
+        Text games = key.getGames();
+        int athletes = key.getAthletes().get();
+
+        int i = recordCounts.containsKey(games) ? recordCounts.get(games) : 0;
+        recordCounts.put(games, i + 1);
+
+        if (recordCounts.get(games) <= 3 ||
+            lastTeamSizes.get(games) == athletes) {
+          context.write(key, val);
+          lastTeamSizes.put(games, athletes);
+        }
+      }
+    }
+  }
+
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
-    conf.set("mapreduce.output.textoutputformat.separator", " ");
+    conf.set("mapreduce.output.textoutputformat.separator", ",");
     String[] hargs = new GenericOptionsParser(conf, args).getRemainingArgs();
     if (hargs.length < 2) {
       System.err.println("Usage: performance <in> [<in>...] <out>");
       System.exit(2);
     }
-    Job job = new Job(conf, "Gold medal count");
-    job.setJarByClass(Female.class);
-    job.setMapperClass(FemaleMapper.class);
-    job.setReducerClass(FemaleReducer.class);
-    job.setOutputKeyClass(PartWritable.class);
-    job.setOutputValueClass(CustomWritable.class);
-    FileInputFormat.addInputPath(job, new Path(hargs[0]));
-    FileOutputFormat.setOutputPath(job, new Path(hargs[1]));
-    job.waitForCompletion(true);
+    Job job1 = new Job(conf, "Count athletes per games-team pairs");
+    job1.setJarByClass(Female.class);
+    job1.setMapperClass(TeamPartMapper.class);
+    job1.setReducerClass(TeamPartReducer.class);
+    job1.setOutputKeyClass(TeamPartWritable.class);
+    job1.setOutputValueClass(CustomWritable.class);
+    FileInputFormat.addInputPath(job1, new Path(hargs[0]));
+    FileOutputFormat.setOutputPath(job1, new Path("temp"));
+
+    conf.set("mapreduce.output.textoutputformat.separator", " ");
+    Job job2 = new Job(conf, "Rank teams on number of athletes per game");
+    job2.setJarByClass(Female.class);
+    job2.setMapperClass(RankingMapper.class);
+    job2.setReducerClass(RankingReducer.class);
+    job2.setCombinerClass(RankingReducer.class);
+    job2.setOutputKeyClass(TeamAthletesWritable.class);
+    job2.setOutputValueClass(NullWritable.class);
+    FileInputFormat.addInputPath(job2, new Path("temp"));
+    FileOutputFormat.setOutputPath(job2, new Path(hargs[1]));
+
+    job1.waitForCompletion(true);
+    job2.waitForCompletion(true);
   }
 }

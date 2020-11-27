@@ -414,8 +414,6 @@ public class Top {
     job2.setMapperClass(RankingMapper.class);
     job2.setReducerClass(RankingReducer.class);
     job2.setCombinerClass(RankingReducer.class);
-    job2.setMapOutputKeyClass(ChampionWritable.class);
-    job2.setMapOutputValueClass(NullWritable.class);
     job2.setOutputKeyClass(ChampionWritable.class);
     job2.setOutputValueClass(NullWritable.class);
     FileInputFormat.addInputPath(job2, new Path("temp"));
