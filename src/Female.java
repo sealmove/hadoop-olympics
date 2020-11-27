@@ -7,6 +7,11 @@ import java.io.StringReader;
 import java.io.DataInput;
 import java.io.DataOutput;
 
+
+import java.util.Map;
+import java.util.HashMap;
+import java.util.HashSet;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
@@ -24,9 +29,6 @@ import org.apache.hadoop.util.GenericOptionsParser;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
 
-/* (Team, NOC, Games, Year)
- * (Athlete count, Sport count) */
-
 public class Female {
   // Utility methods
   public static int tryParseInt(String s) {
@@ -37,6 +39,17 @@ public class Female {
     return result;
   }
 
+  public static Sex tryParseSex(String s) {
+    Sex result;
+    try {
+      result = Sex.valueOf(s);
+    } catch (IllegalArgumentException iae) {
+      result = Sex.NA;
+    }
+    return result;
+  }
+
+  enum Sex {NA, M, F}
   public static class PartWritable
   implements WritableComparable<PartWritable> {
     private final Text team;
@@ -79,7 +92,7 @@ public class Female {
     public int compareTo(PartWritable pw) {
       int cmp = year.compareTo(pw.year);
       if (cmp != 0) return cmp;
-      cmp = noc.compareTo(pw.noc);
+      cmp = team.compareTo(pw.team);
       if (cmp != 0) return cmp;
       cmp = games.compareTo(pw.games);
       if (cmp != 0) return cmp;
@@ -94,6 +107,9 @@ public class Female {
   public static class CustomWritable implements Writable {
     private final IntWritable num;
     private final Text sport;
+
+    public IntWritable getNum() { return num; }
+    public Text getSport() { return sport; }
 
     public CustomWritable() {
       this.num = new IntWritable(0);
@@ -130,6 +146,9 @@ public class Female {
       String[] row;
       try {
         while ((row = csvReader.readNext()) != null) {
+          Sex sex = tryParseSex(row[2]);
+          if (sex != Sex.F) continue; // only interested in females
+
           // Key
           String team = row[6];
           String noc = row[7];
@@ -155,14 +174,30 @@ public class Female {
   extends Reducer<PartWritable, CustomWritable, PartWritable, CustomWritable> {
     public void reduce(PartWritable key, Iterable<CustomWritable> values,
     Context context) throws IOException, InterruptedException {
-      // idCount: map(id, count)
-      // sportCount: map(sport, count)
-      for (CustomWritable val : values) {
+      HashSet<IntWritable> ids = new HashSet<>();
+      HashMap<Text, Integer> sportsCount = new HashMap<>();
 
+      for (CustomWritable val : values) {
+        ids.add(val.getNum());
+
+        Text sport = val.getSport();
+        int i = sportsCount.containsKey(sport) ? sportsCount.get(sport) : 0;
+        sportsCount.put(sport, i + 1);
       }
-      int count = 0; // = distinct values in idCount 
-      String sport = ""; // = top count in sportCount
-      context.write(key, new CustomWritable(count, sport));
+
+      // Sport with the maximum count
+      Map.Entry<Text, Integer> topSport = null;
+      for (Map.Entry<Text, Integer> entry : sportsCount.entrySet())
+        if (topSport == null || entry.getValue().compareTo(topSport.getValue()) > 0)
+          topSport = entry;
+
+      context.write(
+        key,
+        new CustomWritable(
+          ids.size(), // Number of distinct ids
+          topSport.getKey().toString()
+        )
+      );
     }
   }
 
@@ -178,7 +213,6 @@ public class Female {
     job.setJarByClass(Female.class);
     job.setMapperClass(FemaleMapper.class);
     job.setReducerClass(FemaleReducer.class);
-    job.setCombinerClass(FemaleReducer.class);
     job.setOutputKeyClass(PartWritable.class);
     job.setOutputValueClass(CustomWritable.class);
     FileInputFormat.addInputPath(job, new Path(hargs[0]));
