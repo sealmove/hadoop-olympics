@@ -62,6 +62,7 @@ public class Top {
 
   public static class AthleteWritable
   implements WritableComparable<AthleteWritable> {
+    private final IntWritable id;
     private final Text name;
     private final IntWritable sex;
     private final IntWritable age;
@@ -69,6 +70,7 @@ public class Top {
     private final Text games;
     private final Text sport;
 
+    public IntWritable getId() { return id; }
     public Text getName() { return name; }
     public IntWritable getSex() { return sex; }
     public IntWritable getAge() { return age; }
@@ -77,6 +79,7 @@ public class Top {
     public Text getSport() { return sport; }
 
     public AthleteWritable() {
+      this.id = new IntWritable(0);
       this.name = new Text();
       this.sex = new IntWritable(0);
       this.age = new IntWritable(0);
@@ -85,8 +88,9 @@ public class Top {
       this.sport = new Text();
     }
 
-    public AthleteWritable(String name, Sex sex, int age, String team,
+    public AthleteWritable(int id, String name, Sex sex, int age, String team,
                            String games, String sport) {
+      this.id = new IntWritable(id);
       this.name = new Text(name);
       this.sex = new IntWritable(sex.ordinal());
       this.age = new IntWritable(age);
@@ -97,6 +101,7 @@ public class Top {
 
     @Override
     public void readFields(DataInput in) throws IOException {
+      id.readFields(in);
       name.readFields(in);
       sex.readFields(in);
       age.readFields(in);
@@ -107,6 +112,7 @@ public class Top {
 
     @Override
     public void write(DataOutput out) throws IOException {
+      id.write(out);
       name.write(out);
       sex.write(out);
       age.write(out);
@@ -118,16 +124,17 @@ public class Top {
     // This is necessary because reducer needs to know how to order keys
     @Override
     public int compareTo(AthleteWritable aw) {
-      if (name.equals(aw.name)) {
+      if (id.equals(aw.id)) {
         return games.compareTo(aw.games);
       } else {
-        return name.compareTo(aw.name);
+        return id.compareTo(aw.id);
       }
     }
 
     @Override
     public String toString() {
       String[] entry = {
+        id.toString(),
         name.toString(),
         Sex.values()[sex.get()].toString(),
         age.toString(),
@@ -224,11 +231,11 @@ public class Top {
       medals = new MedalsWritable();
     }
 
-    public ChampionWritable(String name, Sex sex, int age, String team,
+    public ChampionWritable(int id, String name, Sex sex, int age, String team,
                             String games, String sport, int golds, int silvers,
                             int bronzes, int total) {
       rank = new IntWritable(0);
-      athlete = new AthleteWritable(name, sex, age, team, games, sport);
+      athlete = new AthleteWritable(id, name, sex, age, team, games, sport);
       medals = new MedalsWritable(golds, silvers, bronzes, total);
     }
 
@@ -256,10 +263,10 @@ public class Top {
       if (cmp != 0) return -cmp;
 
       cmp = athlete.getName().compareTo(cw.getAthlete().getName());
-      if (cmp != 0) return -cmp;
+      if (cmp != 0) return cmp;
 
       cmp = athlete.getGames().compareTo(cw.getAthlete().getGames());
-      if (cmp != 0) return -cmp;
+      if (cmp != 0) return cmp;
 
       return 0;
     }
@@ -290,6 +297,7 @@ public class Top {
       try {
         while ((row = csvReader.readNext()) != null) {
           // Key
+          int id = tryParseInt(row[0]);
           String name = row[1];
           Sex sex = tryParseSex(row[2]);
           int age = tryParseInt(row[3]);
@@ -301,7 +309,7 @@ public class Top {
           Medal medal = tryParseMedal(row[14]);
 
           context.write(
-            new AthleteWritable(name, sex, age, team, games, sport),
+            new AthleteWritable(id, name, sex, age, team, games, sport),
             new IntWritable(medal.ordinal())
           );
         }
@@ -346,19 +354,20 @@ public class Top {
       try {
         while ((row = csvReader.readNext()) != null) {
           // Key
-          String name = row[0];
-          Sex sex = tryParseSex(row[1]);
-          int age = tryParseInt(row[2]);
-          String team = row[3];
-          String games = row[4];
-          String sport = row[5];
-          int golds = tryParseInt(row[6]);
-          int silvers = tryParseInt(row[7]);
-          int bronzes = tryParseInt(row[8]);
-          int total = tryParseInt(row[9]);
+          int id = tryParseInt(row[0]);
+          String name = row[1];
+          Sex sex = tryParseSex(row[2]);
+          int age = tryParseInt(row[3]);
+          String team = row[4];
+          String games = row[5];
+          String sport = row[6];
+          int golds = tryParseInt(row[7]);
+          int silvers = tryParseInt(row[8]);
+          int bronzes = tryParseInt(row[9]);
+          int total = tryParseInt(row[10]);
 
           context.write(
-            new ChampionWritable(name, sex, age, team, games, sport, golds,
+            new ChampionWritable(id, name, sex, age, team, games, sport, golds,
                                  silvers, bronzes, total),
             NullWritable.get()
           );
