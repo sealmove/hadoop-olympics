@@ -76,7 +76,7 @@ public class Performance {
       sex.write(out);
     }
 
-    // This is defines the way data will be partitioned and ordered
+    // Defines the way data will be partitioned and ordered
     @Override
     public int compareTo(CustomWritable cw) { return id.compareTo(cw.id); }
 

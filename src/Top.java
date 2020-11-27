@@ -121,7 +121,7 @@ public class Top {
       sport.write(out);
     }
 
-    // This is defines the way data will be partitioned and ordered
+    // Defines defines the way data will be partitioned and ordered
     @Override
     public int compareTo(AthleteWritable aw) {
       if (id.equals(aw.id)) {
@@ -253,7 +253,7 @@ public class Top {
       medals.write(out);
     }
 
-    // This is defines the way data will be partitioned and ordered
+    // Defines defines the way data will be partitioned and ordered
     @Override
     public int compareTo(ChampionWritable cw) {
       int cmp = medals.getGolds().compareTo(cw.getMedals().getGolds());
