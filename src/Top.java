@@ -283,7 +283,7 @@ public class Top {
     }
   }
 
-  public static class GoldMedalCountMapper
+  public static class MedalCountMapper
   extends Mapper<Object, Text, AthleteWritable, IntWritable> {
     public void map(Object key, Text value, Context context)
     throws IOException, InterruptedException {
@@ -314,7 +314,7 @@ public class Top {
     }
   }
 
-  public static class GoldMedalCountReducer
+  public static class MedalCountReducer
   extends Reducer<AthleteWritable, IntWritable, AthleteWritable, MedalsWritable> {
     public void reduce(AthleteWritable key, Iterable<IntWritable> values,
     Context context) throws IOException, InterruptedException {
@@ -399,8 +399,8 @@ public class Top {
 
     Job job1 = new Job(conf, "Medal count");
     job1.setJarByClass(Top.class);
-    job1.setMapperClass(GoldMedalCountMapper.class);
-    job1.setReducerClass(GoldMedalCountReducer.class);
+    job1.setMapperClass(MedalCountMapper.class);
+    job1.setReducerClass(MedalCountReducer.class);
     job1.setMapOutputKeyClass(AthleteWritable.class);
     job1.setMapOutputValueClass(IntWritable.class);
     job1.setOutputKeyClass(AthleteWritable.class);
