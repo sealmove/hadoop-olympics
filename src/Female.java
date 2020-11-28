@@ -331,18 +331,16 @@ public class Female {
                   TeamAthletesWritable, NullWritable> {
     public void reduce(TeamAthletesWritable key, Iterable<NullWritable> values,
     Context context) throws IOException, InterruptedException {
-      for (NullWritable val : values) {
-        Text games = key.getGames();
-        int athletes = key.getAthletes().get();
+      Text games = key.getGames();
+      int athletes = key.getAthletes().get();
 
-        int i = recordCounts.containsKey(games) ? recordCounts.get(games) : 0;
-        recordCounts.put(games, i + 1);
+      int i = recordCounts.containsKey(games) ? recordCounts.get(games) : 0;
+      recordCounts.put(games, i + 1);
 
-        if (recordCounts.get(games) <= 3 ||
-            lastTeamSizes.get(games) == athletes) {
-          context.write(key, val);
-          lastTeamSizes.put(games, athletes);
-        }
+      if (recordCounts.get(games) <= 3 ||
+          lastTeamSizes.get(games) == athletes) {
+        context.write(key, NullWritable.get());
+        lastTeamSizes.put(games, athletes);
       }
     }
   }

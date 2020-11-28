@@ -378,10 +378,8 @@ public class Top {
     public void reduce(ChampionWritable key, Iterable<NullWritable> values,
     Context context) throws IOException, InterruptedException {
       if (n <= 10) {
-        for (NullWritable val : values) {
-          key.setRank(n);
-          context.write(key, val);
-        }
+        key.setRank(n);
+        context.write(key, NullWritable.get());
       }
       ++n;
     }
