@@ -397,7 +397,7 @@ public class Top {
       System.exit(2);
     }
 
-    Job job1 = new Job(conf, "Gold medal count");
+    Job job1 = new Job(conf, "Medal count");
     job1.setJarByClass(Top.class);
     job1.setMapperClass(GoldMedalCountMapper.class);
     job1.setReducerClass(GoldMedalCountReducer.class);
