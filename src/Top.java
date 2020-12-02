@@ -69,7 +69,6 @@ public class Top {
     private final Text name;
     private final IntWritable sex;
     private final IntWritable age;
-    private final Text team;
     private final Text games;
     private final Text sport;
 
@@ -77,7 +76,6 @@ public class Top {
     public Text getName() { return name; }
     public IntWritable getSex() { return sex; }
     public IntWritable getAge() { return age; }
-    public Text getTeam() { return team; }
     public Text getGames() { return games; }
     public Text getSport() { return sport; }
 
@@ -86,18 +84,16 @@ public class Top {
       this.name = new Text();
       this.sex = new IntWritable(0);
       this.age = new IntWritable(0);
-      this.team = new Text();
       this.games = new Text();
       this.sport = new Text();
     }
 
-    public AthleteWritable(int id, String name, Sex sex, int age, String team,
+    public AthleteWritable(int id, String name, Sex sex, int age,
                            String games, String sport) {
       this.id = new IntWritable(id);
       this.name = new Text(name);
       this.sex = new IntWritable(sex.ordinal());
       this.age = new IntWritable(age);
-      this.team = new Text(team);
       this.games = new Text(games);
       this.sport = new Text(sport);
     }
@@ -108,7 +104,6 @@ public class Top {
       name.readFields(in);
       sex.readFields(in);
       age.readFields(in);
-      team.readFields(in);
       games.readFields(in);
       sport.readFields(in);
     }
@@ -119,7 +114,6 @@ public class Top {
       name.write(out);
       sex.write(out);
       age.write(out);
-      team.write(out);
       games.write(out);
       sport.write(out);
     }
@@ -141,9 +135,8 @@ public class Top {
         name.toString(),
         Sex.values()[sex.get()].toString(),
         age.toString(),
-        team.toString(),
-        sport.toString(),
-        games.toString()
+        games.toString(),
+        sport.toString()
       };
       StringWriter stringWriter = new StringWriter();
       CSVWriter csvWriter = new CSVWriter(stringWriter);
@@ -234,11 +227,11 @@ public class Top {
       medals = new MedalsWritable();
     }
 
-    public ChampionWritable(int id, String name, Sex sex, int age, String team,
+    public ChampionWritable(int id, String name, Sex sex, int age,
                             String games, String sport, int golds, int silvers,
                             int bronzes, int total) {
       rank = new IntWritable(0);
-      athlete = new AthleteWritable(id, name, sex, age, team, games, sport);
+      athlete = new AthleteWritable(id, name, sex, age, games, sport);
       medals = new MedalsWritable(golds, silvers, bronzes, total);
     }
 
@@ -276,7 +269,6 @@ public class Top {
              athlete.getName() + " " +
              Sex.values()[athlete.getSex().get()] + " " +
              athlete.getAge() + " " +
-             athlete.getTeam() + " " +
              athlete.getSport() + " " +
              athlete.getGames() + " " +
              medals.getGolds() + " " +
@@ -300,7 +292,6 @@ public class Top {
           String name = row[1];
           Sex sex = tryParseSex(row[2]);
           int age = tryParseInt(row[3]);
-          String team = row[6];
           String games = row[8];
           String sport = row[12];
 
@@ -308,7 +299,7 @@ public class Top {
           Medal medal = tryParseMedal(row[14]);
 
           context.write(
-            new AthleteWritable(id, name, sex, age, team, games, sport),
+            new AthleteWritable(id, name, sex, age, games, sport),
             new IntWritable(medal.ordinal())
           );
         }
@@ -357,16 +348,15 @@ public class Top {
           String name = row[1];
           Sex sex = tryParseSex(row[2]);
           int age = tryParseInt(row[3]);
-          String team = row[4];
-          String games = row[5];
-          String sport = row[6];
-          int golds = tryParseInt(row[7]);
-          int silvers = tryParseInt(row[8]);
-          int bronzes = tryParseInt(row[9]);
-          int total = tryParseInt(row[10]);
+          String games = row[4];
+          String sport = row[5];
+          int golds = tryParseInt(row[6]);
+          int silvers = tryParseInt(row[7]);
+          int bronzes = tryParseInt(row[8]);
+          int total = tryParseInt(row[9]);
 
           context.write(
-            new ChampionWritable(id, name, sex, age, team, games, sport, golds,
+            new ChampionWritable(id, name, sex, age, games, sport, golds,
                                  silvers, bronzes, total),
             NullWritable.get()
           );
@@ -380,13 +370,13 @@ public class Top {
   extends Reducer<ChampionWritable, NullWritable, ChampionWritable, NullWritable> {
     public void reduce(ChampionWritable key, Iterable<NullWritable> values,
     Context context) throws IOException, InterruptedException {
-      if (n <= 10) {
-        int golds = key.getMedals().getGolds().get();
-        int total = key.getMedals().getTotal().get();
-        if (golds != lastGolds || total != lastTotal)
-          rank = n;
-          lastGolds = golds;
-          lastTotal = total;
+      int golds = key.getMedals().getGolds().get();
+      int total = key.getMedals().getTotal().get();
+      if (golds != lastGolds || total != lastTotal)
+        rank = n;
+        lastGolds = golds;
+        lastTotal = total;
+      if (rank <= 10) {
         key.setRank(rank);
         context.write(key, NullWritable.get());
       }

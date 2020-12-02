@@ -14,9 +14,9 @@ exp = FOREACH inp
                WHEN 'Bronze' THEN (0,0,1,1)
                ELSE (0,0,0,0) END) AS medals;
 flt = FOREACH exp
-      GENERATE id, name, sex, age, team, games, sport,
+      GENERATE id, name, sex, age, sport, games,
                FLATTEN(medals) AS (gold, silver, bronze, total);
-grp = GROUP flt BY (id, name, sex, age, team, games, sport);
+grp = GROUP flt BY (id, name, sex, age, sport, games);
 agg = FOREACH grp
       GENERATE FLATTEN(group), SUM($1.gold) as gold, SUM($1.silver) as silver,
                SUM($1.bronze) as bronze, SUM($1.total) as total;
