@@ -28,6 +28,9 @@ import com.opencsv.exceptions.CsvValidationException;
 
 public class Top {
   static int n = 1;
+  static int rank = 0;
+  static int lastGolds = -1;
+  static int lastTotal = -1;
   // Utility methods
   public static int tryParseInt(String s) {
     int result;
@@ -378,7 +381,13 @@ public class Top {
     public void reduce(ChampionWritable key, Iterable<NullWritable> values,
     Context context) throws IOException, InterruptedException {
       if (n <= 10) {
-        key.setRank(n);
+        int golds = key.getMedals().getGolds().get();
+        int total = key.getMedals().getTotal().get();
+        if (golds != lastGolds || total != lastTotal)
+          rank = n;
+          lastGolds = golds;
+          lastTotal = total;
+        key.setRank(rank);
         context.write(key, NullWritable.get());
       }
       ++n;
