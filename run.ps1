@@ -14,6 +14,8 @@ hadoop fs -rm -r output
 # run the code
 hadoop jar "$target\$project\$project.jar" "$project" $in $out
 
-# copy results from hdfs locally
-If (!(Test-Path "$results\$project")) {mkdir "$results\$project"}
-hadoop fs -cat "$out/*" > $file
+if ($?) {
+  # copy results from hdfs locally
+  If (!(Test-Path "$results\$project")) {mkdir "$results\$project"}
+  hadoop fs -cat "$out/*" > $file
+}

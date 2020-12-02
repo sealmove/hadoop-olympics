@@ -9,4 +9,4 @@ $file = "$results\$project\${date}_pig.txt"
 hdfs dfsadmin -safemode leave
 hadoop fs -rm -r $pig_out
 pig "$pig_src\$project.pig"
-hadoop fs -cat "$pig_out/*" > $file
+if ($?) {hadoop fs -cat "$pig_out/*" > $file}
