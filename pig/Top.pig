@@ -20,7 +20,7 @@ grp = GROUP flt BY (id, name, sex, age, team, games, sport);
 agg = FOREACH grp
       GENERATE FLATTEN(group), SUM($1.gold) as gold, SUM($1.silver) as silver,
                SUM($1.bronze) as bronze, SUM($1.total) as total;
-rnk = RANK agg BY gold DESC, total DESC, name ASC;
+rnk = RANK agg BY gold DESC, total DESC;
 top = FILTER rnk BY $0 <= 10;
 out = FOREACH top GENERATE $0, $2 ..;
 STORE out INTO 'pig_output' USING CSVWriter();
