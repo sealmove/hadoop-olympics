@@ -7,7 +7,7 @@ inp = LOAD 'input' USING CSVLoader()
           season:chararray, city:chararray, sport:chararray, event:chararray,
           medal:chararray);
 ath = FOREACH inp GENERATE id, name, sex, (medal == 'Gold' ? 1 : 0) as golds;
-grp = GROUP ath by (id, name, sex);
-agg = FOREACH grp GENERATE FLATTEN(group), SUM($1.golds);
+agg = FOREACH (GROUP ath by (id, name, sex))
+      GENERATE FLATTEN(group), SUM($1.golds);
 out = ORDER agg by id;
 STORE out INTO 'pig_output' USING CSVWriter();
